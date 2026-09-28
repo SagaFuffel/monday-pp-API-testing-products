@@ -48,6 +48,130 @@ afterAll(async () => {
   await mongoose.connection.close();
 });
 
+describe("GET /api/products", () => {
+  it("should return all products", async () => {
+    const res = await api.get("/api/products").expect(200);
+    expect(res.body).toHaveLength(products.length);
+  });
+
+  it("should return products as JSON with status 200", async () => {
+    await api
+      .get("/api/products")
+      .expect(200)
+      .expect("Content-Type", /application\/json/);
+  });
+
+  it("should include a specific product in the returned list", async () => {
+    const res = await api.get("/api/products");
+
+    expect(res.body.map((product) => product.title)).toContain(
+      "Wireless Mouse",
+    );
+  });
+});
+
+describe("POST /api/products", () => {
+  describe("when the payload is valid", () => {
+    it("should return status 201", async () => {
+      const newProduct = {
+        title: "Phone",
+        category: "Electronics",
+        description: "Ergonomic wireless phone with USB receiver.",
+        price: 999.999,
+        stockQuantity: 200,
+        supplier: {
+          name: "TechSup Co.",
+          contactEmail: "contactme@techsupply.example",
+          contactPhone: "+358401112233",
+          rating: 5,
+        },
+      };
+      await api.post("/api/products").send(newProduct).expect(201);
+    });
+    it("should persist the new product in the database", async () => {
+      const newProduct = {
+        title: "Phone",
+        category: "Electronics",
+        description: "Ergonomic wireless phone with USB receiver.",
+        price: 999.999,
+        stockQuantity: 200,
+        supplier: {
+          name: "TechSup Co.",
+          contactEmail: "contactme@techsupply.example",
+          contactPhone: "+358401112233",
+          rating: 5,
+        },
+      };
+      await api.post("/api/products").send(newProduct).expect(201);
+      const addedproduct = await Product.find({});
+      expect(addedproduct).toHaveLength(products.length + 1);
+      expect(addedproduct.map((product) => product.title)).toContain(
+        newProduct.title,
+      );
+    });
+  });
+  describe("when the payload is invalid", () => {
+    it("should return status 400 when title is missing", async () => {
+      const newProduct = {
+        category: "Electronics",
+        description: "Ergonomic wireless phone with USB receiver.",
+        price: 999.999,
+        stockQuantity: 200,
+        supplier: {
+          name: "TechSup Co.",
+          contactEmail: "contactme@techsupply.example",
+          contactPhone: "+358401112233",
+          rating: 5,
+        },
+      };
+      await api.post("/api/products").send(newProduct).expect(400);
+    });
+    it("should not increase the number of products in the database", async () => {
+      const newProduct = {
+        category: "Electronics",
+        description: "Ergonomic wireless phone with USB receiver.",
+        price: 999.999,
+        stockQuantity: 200,
+        supplier: {
+          name: "TechSup Co.",
+          contactEmail: "contactme@techsupply.example",
+          contactPhone: "+358401112233",
+          rating: 5,
+        },
+      };
+      await api.post("/api/products").send(newProduct).expect(400);
+      const currentProduct = await Product.find({});
+      expect(currentProduct).toHaveLength(products.length);
+    });
+  });
+});
+
+describe("GET /api/products/:productId", () => {
+  describe("when the id is valid", () => {
+    it("should return one product by id", async () => {
+      const product = await Product.findOne();
+
+      const res = await api
+        .get(`/api/products/${product._id}`)
+        .expect(200)
+        .expect("Content-Type", /application\/json/);
+      expect(res.body.title).toBe(product.title);
+    });
+  });
+  describe("when the id does not exist", () => {
+    it("should return status 404", async () => {
+      const nonId = new mongoose.Types.ObjectId();
+
+      await api.get(`/api/products/${nonId}`).expect(404);
+    });
+  });
+  describe("when the id is invalid", () => {
+    it("should return status 404", async () => {
+      await api.get("/api/products/1234").expect(404);
+    });
+  });
+});
+
 
 describe("PUT /api/products/:productId", () => {
     describe("while id is correct", () => {
