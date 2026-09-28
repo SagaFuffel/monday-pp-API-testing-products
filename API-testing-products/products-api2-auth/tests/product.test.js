@@ -101,3 +101,153 @@ describe("DELETE /api/products/:productId", () => {
     });
   })
 });
+
+describe("GET /api/products", () => {
+    it("get all products", async () => {
+        const res = await api.get("/api/products").expect(200);
+        expect(res.body).toHaveLength(products.length);
+    });
+
+    it("return JSON + 200", async () => {
+        await api
+            .get("/api/products")
+            .expect(200) //is it 200
+            .expect("Content-Type",/application\/json/) //is it json
+    });
+
+    it("include a specific product in the returned list", async () => {
+        const res = await api.get("/api/products");
+
+        expect(res.body.map((Product) => Product.title)).toContain(
+            "Wireless Mouse"
+        );
+    });
+
+});
+
+
+
+describe("POST /api/products", () => {
+    describe("when the payload is valid", () => {
+        it("return status 201", async () => {
+            const newProduct =
+            {
+                title: "Computer",
+                category: "Electronics",
+                description: "Ergonomic wireless mouse with USB receiver.",
+                price: 29.99,
+                stockQuantity: 200,
+                supplier: {
+                    name: "TechSupply OY.",
+                    contactEmail: "sale@techsupply.example",
+                    contactPhone: "+358401233",
+                    rating: 5,
+                },
+            };
+            await api.post("/api/products").send(newProduct).expect(201);
+        });
+
+        it("persist the new product in the database", async () => {
+            const newProduct = {
+                title: "Computer",
+                category: "Electronics",
+                description: "Ergonomic wireless mouse with USB receiver.",
+                price: 29.99,
+                stockQuantity: 200,
+                supplier: {
+                    name: "TechSupply OY.",
+                    contactEmail: "sale@techsupply.example",
+                    contactPhone: "+358401233",
+                    rating: 5,
+                },
+            };
+
+            await api
+                .post("/api/products")
+                .send(newProduct)
+                .expect(201);
+            const productsPosted = await Product.find({});
+            expect(productsPosted).toHaveLength(products.length + 1);
+            expect(productsPosted.map((product) => product.title))
+                .toContain(newProduct.title);
+            });
+        });
+    });
+
+    describe("the payload is invalid", () => {
+        it("return status 400 when title is missing", async () => {
+            const missingProduct = {
+                category: "Electronics",
+                description: "fake",
+                price: 29.99,
+                stockQuantity: 200,
+                supplier: {
+                    name: "nothing",
+                    contactEmail: "sale@techsupply.example",
+                    contactPhone: "+358401233",
+                    rating: 5,
+                },
+            };
+
+            await api
+                .post("/api/products")
+                .send(missingProduct)
+                .expect(400);
+        });
+
+        it("should not increase the number of products in the database", async () => {
+            const missingProduct = {
+                category: "Electronics",
+                description: "fake",
+                price: 29.99,
+                stockQuantity: 200,
+                supplier: {
+                    name: "nothing",
+                    contactEmail: "sale@techsupply.example",
+                    contactPhone: "+358401233",
+                    rating: 5,
+                },
+            };
+
+            await api
+                .post("/api/products")
+                .send(missingProduct)
+                .expect(400);
+
+            const finalHaul = await Product.find({});
+            expect(finalHaul).toHaveLength(products.length);
+    });
+});
+
+
+describe("GET /api/products/:productId", () => {
+    describe("when the id is valid", () => {
+        it("return product by id", async () => {
+            const product = await Product.findOne();
+            
+            const res = await api
+                .get(`/api/products/${product._id}`)
+                .expect(200)
+                .expect("Content-Type",/application\/json/);
+
+            expect(res.body.title).toBe(product.title);
+
+        })})
+    
+    describe("when id doesn't exist", () => {
+        it("return status 404", async () => {
+            const noId = new mongoose.Types.ObjectId();
+            await api
+                .get(`/api/products/${noId}`)
+                .expect(404);
+        })
+    })
+
+    describe("wrong id", () => {
+        it("return status 404", async () => {
+            await api 
+                .get("/api/products/11111")
+                .expect(404);
+        });
+    });
+});
