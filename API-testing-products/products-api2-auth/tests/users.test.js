@@ -73,7 +73,7 @@ describe("POST /api/users/signup", () => {
   describe("when the email is already registered", () => {
     it("should return status 400", async () => {
       await api.post("/api/users/signup").send(validUser).expect(201);
-      const res = await api.post("/api/users/signup").send({...validUser, name: "hihihaha"}).expect(400);
+      const res = await api.post("/api/users/signup").send({ ...validUser, name: "hihihaha" }).expect(400);
       expect(res.body).toHaveProperty("error", "User already exists");
     });
   });
