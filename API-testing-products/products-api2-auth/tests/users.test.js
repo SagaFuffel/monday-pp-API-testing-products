@@ -78,3 +78,62 @@ describe("POST /api/users/signup", () => {
     });
   });
 });
+
+describe("POST /api/users/login", () => {
+  beforeEach(async () => {
+    await api.post("/api/users/signup").send(validUser).expect(201);
+  });
+
+  describe("when the credentials are valid", () => {
+    it("should return status 200 with JSON", async () => {
+      await api
+        .post("/api/users/login")
+        .send({
+          email: validUser.email,
+          password: validUser.password,
+        })
+        .expect(200)
+        .expect("Content-Type", /application\/json/);
+    });
+
+    it("should return the email and token", async () => {
+      const res = await api
+        .post("/api/users/login")
+        .send({
+          email: validUser.email,
+          password: validUser.password,
+        })
+        .expect(200);
+
+      expect(res.body.email).toBe(validUser.email);
+      expect(res.body.token).toEqual(expect.any(String));
+      expect(res.body.token.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe("when the credentials are invalid", () => {
+    it("should return status 400 with a wrong password", async () => {
+      const res = await api
+        .post("/api/users/login")
+        .send({
+          email: validUser.email,
+          password: "WrongPassword123!",
+        })
+        .expect(400);
+
+      expect(res.body).toHaveProperty("error", "Invalid credentials");
+    });
+
+    it("should return status 400 with an unregistered email", async () => {
+      const res = await api
+        .post("/api/users/login")
+        .send({
+          email: "unregistered@example.com",
+          password: validUser.password,
+        })
+        .expect(400);
+
+      expect(res.body).toHaveProperty("error", "Invalid credentials");
+    });
+  });
+});

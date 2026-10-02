@@ -201,8 +201,7 @@ describe("PUT /api/products/:productId", () => {
 //wrong
     describe("id incorrect", () => {
         it("return (400)", async () => {
-            const product = await Product.findOne();
-            await api.put(`/api/products/${product._id}`).send({}).expect(200);
+            await api.put("/api/products/1234").send({}).expect(404);
         });
     });
 });
@@ -228,8 +227,7 @@ describe("DELETE /api/products/:productId", () => {
 //wrong
     describe("id incorrect", () => {
         it("return (400)", async () => {
-            const product = await Product.findOne();
-            await api.put(`/api/products/${product._id}`).send({}).expect(200);
+            await api.delete("/api/products/1234").expect(404);
         });
     });
 });
